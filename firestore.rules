@@ -25,8 +25,7 @@ service cloud.firestore {
 
     function isVerifiedUser() {
       return isSignedIn() && (
-        ('email_verified' in request.auth.token && request.auth.token.email_verified == true) ||
-        ('phone_number' in request.auth.token && request.auth.token.phone_number is string && request.auth.token.phone_number.size() > 0 && request.auth.token.phone_number.size() <= 32)
+        'email_verified' in request.auth.token && request.auth.token.email_verified == true
       );
     }
 
@@ -36,7 +35,7 @@ service cloud.firestore {
 
     function isAdmin() {
       return isSignedIn() && (
-        ('email' in request.auth.token && (request.auth.token.email == 'biplob168896@gmail.com' || request.auth.token.email == 'gg627263663@gmail.com') && 'email_verified' in request.auth.token && request.auth.token.email_verified == true) ||
+        ('email' in request.auth.token && (request.auth.token.email == 'ba6263845@gmail.com' || request.auth.token.email == 'biplob168896@gmail.com') && 'email_verified' in request.auth.token && request.auth.token.email_verified == true) ||
         exists(/databases/$(database)/documents/admins/$(request.auth.uid))
       );
     }
@@ -47,19 +46,59 @@ service cloud.firestore {
         && isValidId(data.uid)
         && data.displayName is string && data.displayName.size() >= 1 && data.displayName.size() <= 120
         && data.avatarInitial is string && data.avatarInitial.size() >= 1 && data.avatarInitial.size() <= 4
-        && data.authProvider in ['GOOGLE', 'EMAIL', 'PHONE', 'WHATSAPP']
+        && data.authProvider in ['GOOGLE']
         && data.createdAt is timestamp
         && data.updatedAt is timestamp;
     }
 
     function isValidPrivateInfo(data) {
       return data.keys().hasAll(['uid', 'updatedAt'])
-        && data.keys().hasOnly(['uid', 'email', 'phone', 'businessName', 'businessAddress', 'updatedAt'])
+        && data.keys().hasOnly(['uid', 'email', 'phone', 'businessName', 'businessAddress', 'licenseTier', 'licenseKey', 'updatedAt'])
         && isValidId(data.uid)
         && (!('email' in data) || (data.email is string && data.email.size() <= 180))
         && (!('phone' in data) || (data.phone is string && data.phone.size() <= 32))
         && (!('businessName' in data) || (data.businessName is string && data.businessName.size() <= 120))
         && (!('businessAddress' in data) || (data.businessAddress is string && data.businessAddress.size() <= 250))
+        && (!('licenseTier' in data) || (data.licenseTier in ['STARTER', 'GROWTH', 'ENTERPRISE']))
+        && (!('licenseKey' in data) || (data.licenseKey is string && data.licenseKey.size() <= 64))
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidOrderRecord(data) {
+      return data.keys().hasAll(['id', 'uid', 'customerName', 'phone', 'channel', 'item', 'quantity', 'unitPrice', 'deliveryFee', 'discount', 'total', 'status', 'paymentStatus', 'createdAt', 'updatedAt'])
+        && data.keys().hasOnly(['id', 'uid', 'customerName', 'phone', 'channel', 'item', 'quantity', 'unitPrice', 'deliveryFee', 'discount', 'total', 'status', 'paymentStatus', 'address', 'notes', 'createdAt', 'updatedAt'])
+        && isValidId(data.id)
+        && isValidId(data.uid)
+        && data.customerName is string && data.customerName.size() >= 1 && data.customerName.size() <= 120
+        && data.phone is string && data.phone.size() >= 3 && data.phone.size() <= 32
+        && data.channel in ['WHATSAPP', 'MESSENGER', 'GMAIL']
+        && data.item is string && data.item.size() >= 1 && data.item.size() <= 180
+        && data.quantity is int && data.quantity >= 1 && data.quantity <= 10000
+        && data.unitPrice is number && data.unitPrice >= 0 && data.unitPrice <= 100000000
+        && data.deliveryFee is number && data.deliveryFee >= 0 && data.deliveryFee <= 1000000
+        && data.discount is number && data.discount >= 0 && data.discount <= 100000000
+        && data.total is number && data.total >= 0 && data.total <= 1000000000
+        && data.status in ['PENDING', 'CONFIRMED', 'SHIPPED', 'DELIVERED', 'CANCELLED']
+        && data.paymentStatus in ['UNPAID', 'PAID', 'PARTIAL']
+        && (!('address' in data) || (data.address is string && data.address.size() <= 250))
+        && (!('notes' in data) || (data.notes is string && data.notes.size() <= 500))
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidAutomationRule(data) {
+      return data.keys().hasAll(['id', 'uid', 'name', 'channel', 'keywords', 'replyTemplate', 'autoExtractOrder', 'enabled', 'hitCount', 'createdAt', 'updatedAt'])
+        && data.keys().hasOnly(['id', 'uid', 'name', 'channel', 'keywords', 'replyTemplate', 'autoExtractOrder', 'enabled', 'hitCount', 'createdAt', 'updatedAt'])
+        && isValidId(data.id)
+        && isValidId(data.uid)
+        && data.name is string && data.name.size() >= 1 && data.name.size() <= 120
+        && data.channel in ['ALL', 'WHATSAPP', 'MESSENGER', 'GMAIL']
+        && data.keywords is list && data.keywords.size() >= 1 && data.keywords.size() <= 10 && data.keywords[0] is string && data.keywords[0].size() >= 1 && data.keywords[0].size() <= 60
+        && data.replyTemplate is string && data.replyTemplate.size() >= 1 && data.replyTemplate.size() <= 1000
+        && data.autoExtractOrder is bool
+        && data.enabled is bool
+        && data.hitCount is int && data.hitCount >= 0 && data.hitCount <= 10000000
+        && data.createdAt is timestamp
         && data.updatedAt is timestamp;
     }
 
@@ -69,6 +108,21 @@ service cloud.firestore {
         && isValidId(data.uid)
         && data.email is string && data.email.size() <= 180
         && data.createdAt is timestamp;
+    }
+
+    function isValidLicenseRecord(data) {
+      return data.keys().hasAll(['id', 'licenseKey', 'tier', 'customerName', 'status', 'validDays', 'createdBy', 'createdAt', 'updatedAt'])
+        && data.keys().hasOnly(['id', 'licenseKey', 'tier', 'customerName', 'customerEmail', 'status', 'validDays', 'createdBy', 'createdAt', 'updatedAt'])
+        && isValidId(data.id)
+        && data.licenseKey is string && data.licenseKey.size() >= 10 && data.licenseKey.size() <= 64
+        && data.tier in ['STARTER', 'GROWTH', 'ENTERPRISE']
+        && data.customerName is string && data.customerName.size() >= 1 && data.customerName.size() <= 120
+        && (!('customerEmail' in data) || (data.customerEmail is string && data.customerEmail.size() <= 180))
+        && data.status in ['ACTIVE', 'REVOKED']
+        && data.validDays is int && data.validDays >= 1 && data.validDays <= 3650
+        && data.createdBy is string && data.createdBy.size() >= 1 && data.createdBy.size() <= 128
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
     }
 
     match /users/{userId}/public/profile {
@@ -100,10 +154,17 @@ service cloud.firestore {
       allow get: if isValidId(userId) && (isOwner(userId) || isAdmin());
       allow create: if isValidId(userId)
         && isVerifiedUser()
-        && isOwner(userId)
         && isValidPrivateInfo(incoming())
-        && incoming().uid == request.auth.uid
-        && incoming().updatedAt == request.time;
+        && incoming().updatedAt == request.time
+        && (
+          isAdmin() ||
+          (
+            isOwner(userId)
+            && incoming().uid == request.auth.uid
+            && !('licenseTier' in incoming())
+            && !('licenseKey' in incoming())
+          )
+        );
       allow update: if isValidId(userId)
         && isVerifiedUser()
         && isValidPrivateInfo(incoming())
@@ -119,11 +180,89 @@ service cloud.firestore {
       allow delete: if isValidId(userId) && isAdmin();
     }
 
+    match /users/{userId}/orders/{orderId} {
+      allow get: if isValidId(userId) && isValidId(orderId) && (isOwner(userId) || isAdmin());
+      allow list: if isSignedIn() && (isOwner(userId) || isAdmin()) && resource.data.uid == userId;
+      allow create: if isValidId(userId)
+        && isValidId(orderId)
+        && isVerifiedUser()
+        && isOwner(userId)
+        && isValidOrderRecord(incoming())
+        && incoming().id == orderId
+        && incoming().uid == request.auth.uid
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time;
+      allow update: if isValidId(userId)
+        && isValidId(orderId)
+        && isVerifiedUser()
+        && isValidOrderRecord(incoming())
+        && (
+          isAdmin() ||
+          (
+            isOwner(userId)
+            && !(existing().status in ['DELIVERED', 'CANCELLED'])
+            && incoming().id == existing().id
+            && incoming().uid == existing().uid
+            && incoming().createdAt == existing().createdAt
+            && incoming().updatedAt == request.time
+            && incoming().diff(existing()).affectedKeys().hasOnly(['customerName', 'phone', 'channel', 'item', 'quantity', 'unitPrice', 'deliveryFee', 'discount', 'total', 'status', 'paymentStatus', 'address', 'notes', 'updatedAt'])
+          )
+        );
+      allow delete: if isValidId(userId) && isValidId(orderId) && (isOwner(userId) || isAdmin());
+    }
+
+    match /users/{userId}/rules/{ruleId} {
+      allow get: if isValidId(userId) && isValidId(ruleId) && (isOwner(userId) || isAdmin());
+      allow list: if isSignedIn() && (isOwner(userId) || isAdmin()) && resource.data.uid == userId;
+      allow create: if isValidId(userId)
+        && isValidId(ruleId)
+        && isVerifiedUser()
+        && isOwner(userId)
+        && isValidAutomationRule(incoming())
+        && incoming().id == ruleId
+        && incoming().uid == request.auth.uid
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time;
+      allow update: if isValidId(userId)
+        && isValidId(ruleId)
+        && isVerifiedUser()
+        && isValidAutomationRule(incoming())
+        && (
+          isAdmin() ||
+          (
+            isOwner(userId)
+            && incoming().id == existing().id
+            && incoming().uid == existing().uid
+            && incoming().createdAt == existing().createdAt
+            && incoming().updatedAt == request.time
+            && incoming().diff(existing()).affectedKeys().hasOnly(['name', 'channel', 'keywords', 'replyTemplate', 'autoExtractOrder', 'enabled', 'hitCount', 'updatedAt'])
+          )
+        );
+      allow delete: if isValidId(userId) && isValidId(ruleId) && (isOwner(userId) || isAdmin());
+    }
+
     match /admins/{userId} {
       allow get: if isValidId(userId) && (isOwner(userId) || isAdmin());
       allow create: if isValidId(userId) && isAdmin() && isValidAdminRecord(incoming()) && incoming().createdAt == request.time;
       allow update: if isValidId(userId) && isAdmin() && isValidAdminRecord(incoming()) && incoming().uid == existing().uid && incoming().createdAt == existing().createdAt;
       allow delete: if isValidId(userId) && isAdmin();
+    }
+
+    match /licenses/{licenseId} {
+      allow get, list: if isAdmin();
+      allow create: if isValidId(licenseId)
+        && isAdmin()
+        && isValidLicenseRecord(incoming())
+        && incoming().id == licenseId
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time;
+      allow update: if isValidId(licenseId)
+        && isAdmin()
+        && isValidLicenseRecord(incoming())
+        && incoming().id == existing().id
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time;
+      allow delete: if isValidId(licenseId) && isAdmin();
     }
   }
 }

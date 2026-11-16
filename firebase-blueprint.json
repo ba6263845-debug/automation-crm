@@ -26,7 +26,7 @@
         },
         "authProvider": {
           "type": "string",
-          "enum": ["GOOGLE", "EMAIL", "PHONE", "WHATSAPP"],
+          "enum": ["GOOGLE"],
           "description": "Authentication provider used for the session."
         },
         "createdAt": {
@@ -44,7 +44,7 @@
     },
     "UserPrivateInfo": {
       "title": "UserPrivateInfo",
-      "description": "Strictly isolated PII contact and business information for the authenticated owner.",
+      "description": "Strictly isolated PII contact, business, and licensing information for the authenticated owner.",
       "type": "object",
       "properties": {
         "uid": {
@@ -57,12 +57,12 @@
         "email": {
           "type": "string",
           "maxLength": 180,
-          "description": "Verified Gmail or email address."
+          "description": "Verified email address."
         },
         "phone": {
           "type": "string",
           "maxLength": 32,
-          "description": "Verified mobile or WhatsApp phone number."
+          "description": "Business phone or WhatsApp number."
         },
         "businessName": {
           "type": "string",
@@ -74,6 +74,16 @@
           "maxLength": 250,
           "description": "Business street or city address."
         },
+        "licenseTier": {
+          "type": "string",
+          "enum": ["STARTER", "GROWTH", "ENTERPRISE"],
+          "description": "Active CRM license tier."
+        },
+        "licenseKey": {
+          "type": "string",
+          "maxLength": 64,
+          "description": "License key string."
+        },
         "updatedAt": {
           "type": "string",
           "format": "date-time",
@@ -81,6 +91,139 @@
         }
       },
       "required": ["uid", "updatedAt"]
+    },
+    "OrderRecord": {
+      "title": "OrderRecord",
+      "description": "Customer order row in the CRM spreadsheet and invoice ledger.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "uid": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "customerName": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120
+        },
+        "phone": {
+          "type": "string",
+          "minLength": 3,
+          "maxLength": 32
+        },
+        "channel": {
+          "type": "string",
+          "enum": ["WHATSAPP", "MESSENGER", "GMAIL"]
+        },
+        "item": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 180
+        },
+        "quantity": {
+          "type": "integer"
+        },
+        "unitPrice": {
+          "type": "number"
+        },
+        "deliveryFee": {
+          "type": "number"
+        },
+        "discount": {
+          "type": "number"
+        },
+        "total": {
+          "type": "number"
+        },
+        "status": {
+          "type": "string",
+          "enum": ["PENDING", "CONFIRMED", "SHIPPED", "DELIVERED", "CANCELLED"]
+        },
+        "paymentStatus": {
+          "type": "string",
+          "enum": ["UNPAID", "PAID", "PARTIAL"]
+        },
+        "address": {
+          "type": "string",
+          "maxLength": 250
+        },
+        "notes": {
+          "type": "string",
+          "maxLength": 500
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": ["id", "uid", "customerName", "phone", "channel", "item", "quantity", "unitPrice", "deliveryFee", "discount", "total", "status", "paymentStatus", "createdAt", "updatedAt"]
+    },
+    "AutomationRule": {
+      "title": "AutomationRule",
+      "description": "Smart auto-reply trigger rule for WhatsApp, Messenger, or Gmail.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "uid": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120
+        },
+        "channel": {
+          "type": "string",
+          "enum": ["ALL", "WHATSAPP", "MESSENGER", "GMAIL"]
+        },
+        "keywords": {
+          "type": "array",
+          "description": "Trigger keywords (max 10)."
+        },
+        "replyTemplate": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1000
+        },
+        "autoExtractOrder": {
+          "type": "boolean"
+        },
+        "enabled": {
+          "type": "boolean"
+        },
+        "hitCount": {
+          "type": "integer"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": ["id", "uid", "name", "channel", "keywords", "replyTemplate", "autoExtractOrder", "enabled", "hitCount", "createdAt", "updatedAt"]
     },
     "AdminRecord": {
       "title": "AdminRecord",
@@ -103,6 +246,58 @@
         }
       },
       "required": ["uid", "email", "createdAt"]
+    },
+    "LicenseRecord": {
+      "title": "LicenseRecord",
+      "description": "Admin-issued commercial CRM license record. Strictly readable and writable only by Admins.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "licenseKey": {
+          "type": "string",
+          "minLength": 10,
+          "maxLength": 64
+        },
+        "tier": {
+          "type": "string",
+          "enum": ["STARTER", "GROWTH", "ENTERPRISE"]
+        },
+        "customerName": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120
+        },
+        "customerEmail": {
+          "type": "string",
+          "maxLength": 180
+        },
+        "status": {
+          "type": "string",
+          "enum": ["ACTIVE", "REVOKED"]
+        },
+        "validDays": {
+          "type": "integer"
+        },
+        "createdBy": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": ["id", "licenseKey", "tier", "customerName", "status", "validDays", "createdBy", "createdAt", "updatedAt"]
     }
   },
   "firestore": {
@@ -112,11 +307,23 @@
     },
     "/users/{userId}/private/info": {
       "schema": { "$ref": "#/entities/UserPrivateInfo" },
-      "description": "Isolated PII document containing email, phone, and business address."
+      "description": "Isolated PII document containing email, phone, and business address. Admin-only fields (licenseTier, licenseKey) cannot be modified by regular users."
+    },
+    "/users/{userId}/orders/{orderId}": {
+      "schema": { "$ref": "#/entities/OrderRecord" },
+      "description": "User-owned customer orders for the CRM spreadsheet and QR invoice generator."
+    },
+    "/users/{userId}/rules/{ruleId}": {
+      "schema": { "$ref": "#/entities/AutomationRule" },
+      "description": "User-owned multi-channel auto-reply automation rules."
     },
     "/admins/{userId}": {
       "schema": { "$ref": "#/entities/AdminRecord" },
       "description": "Trusted admin allowlist records."
+    },
+    "/licenses/{licenseId}": {
+      "schema": { "$ref": "#/entities/LicenseRecord" },
+      "description": "Admin-only commercial license registry; inaccessible to customers or regular creators."
     }
   }
 }
