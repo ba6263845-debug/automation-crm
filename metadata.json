@@ -1,0 +1,6 @@
+{
+  "name": "Automation CRM",
+  "description": "WhatsApp, Facebook Messenger, and Gmail multi-channel automation CRM, smart auto-reply studio, customer orders Excel sheet, QR commercial invoices, and licensing suite.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
