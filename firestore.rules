@@ -33,10 +33,19 @@ service cloud.firestore {
       return isSignedIn() && request.auth.uid == userId;
     }
 
+    function isPrimaryAdminEmail() {
+      return isVerifiedUser()
+        && 'email' in request.auth.token
+        && request.auth.token.email.lower() == 'ba6263845@gmail.com';
+    }
+
     function isAdmin() {
-      return isSignedIn() && (
-        ('email' in request.auth.token && (request.auth.token.email == 'ba6263845@gmail.com' || request.auth.token.email == 'biplob168896@gmail.com') && 'email_verified' in request.auth.token && request.auth.token.email_verified == true) ||
-        exists(/databases/$(database)/documents/admins/$(request.auth.uid))
+      return isPrimaryAdminEmail() || (
+        isVerifiedUser()
+        && 'email' in request.auth.token
+        && request.auth.token.email.lower() == 'ba6263845@gmail.com'
+        && exists(/databases/$(database)/documents/admins/$(request.auth.uid))
+        && get(/databases/$(database)/documents/admins/$(request.auth.uid)).data.email.lower() == 'ba6263845@gmail.com'
       );
     }
 
@@ -242,9 +251,21 @@ service cloud.firestore {
     }
 
     match /admins/{userId} {
-      allow get: if isValidId(userId) && (isOwner(userId) || isAdmin());
-      allow create: if isValidId(userId) && isAdmin() && isValidAdminRecord(incoming()) && incoming().createdAt == request.time;
-      allow update: if isValidId(userId) && isAdmin() && isValidAdminRecord(incoming()) && incoming().uid == existing().uid && incoming().createdAt == existing().createdAt;
+      allow get: if isValidId(userId) && isAdmin();
+      allow create: if isValidId(userId)
+        && isAdmin()
+        && userId == request.auth.uid
+        && isValidAdminRecord(incoming())
+        && incoming().uid == request.auth.uid
+        && incoming().email.lower() == 'ba6263845@gmail.com'
+        && incoming().createdAt == request.time;
+      allow update: if isValidId(userId)
+        && isAdmin()
+        && userId == request.auth.uid
+        && isValidAdminRecord(incoming())
+        && incoming().uid == existing().uid
+        && incoming().email.lower() == 'ba6263845@gmail.com'
+        && incoming().createdAt == existing().createdAt;
       allow delete: if isValidId(userId) && isAdmin();
     }
 

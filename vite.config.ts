@@ -80,10 +80,55 @@ export default defineConfig(() => {
           ],
         },
         devOptions: {
-          enabled: true,
+          enabled: process.env.ENABLE_HMR === 'true',
           type: 'module',
         },
       }),
+      {
+        name: 'serve-dev-manifest-without-hmr',
+        apply: 'serve',
+        configureServer(server) {
+          if (process.env.ENABLE_HMR === 'true') return;
+          server.middlewares.use('/manifest.webmanifest', (_req, res) => {
+            res.statusCode = 200;
+            res.setHeader('Content-Type', 'application/manifest+json');
+            res.end(
+              JSON.stringify({
+                id: '/',
+                name: 'Automation CRM',
+                short_name: 'AutoCRM',
+                description:
+                  'WhatsApp, Facebook Messenger, and Gmail multi-channel automation CRM, smart auto-reply studio, customer orders Excel sheet, and commercial QR invoice generator.',
+                theme_color: '#4F46E5',
+                background_color: '#F8FAFC',
+                display: 'standalone',
+                start_url: '/',
+                scope: '/',
+                icons: [
+                  {
+                    src: '/pwa-192x192.png',
+                    sizes: '192x192',
+                    type: 'image/png',
+                    purpose: 'any',
+                  },
+                  {
+                    src: '/pwa-512x512.png',
+                    sizes: '512x512',
+                    type: 'image/png',
+                    purpose: 'any',
+                  },
+                  {
+                    src: '/pwa-maskable-512x512.png',
+                    sizes: '512x512',
+                    type: 'image/png',
+                    purpose: 'maskable',
+                  },
+                ],
+              })
+            );
+          });
+        },
+      },
       {
         name: 'copy-unbundled-src-assets',
         apply: 'build',
